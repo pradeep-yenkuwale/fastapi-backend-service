@@ -16,19 +16,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 async def verify_access_token(request):
     # Extract the token from the request
     try:
-        user_token = get_token_from_request(request)
         # Decode and verify the token using the secret key and algorithm
         url = get_route(request)
         if "auth/login" in str(url):
-            request_payload = await get_body(request)
-            request_payload = json.loads(request_payload)
-            user_data = await get_user_by_email(request_payload['email'])
-            token = create_access_token(request_payload)
-            user_data["access_token"] = token
-            setattr(request, "body", user_data)
             return request
         else:
-            payload = jwt.decode(user_token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_token = get_token_from_request(request)
+            payload = decode_access_token(user_token)
             return payload
     except jwt.ExpiredSignatureError:
         # Raise an HTTPException with status code 401 if the token has expired
@@ -36,22 +30,27 @@ async def verify_access_token(request):
     except jwt.InvalidTokenError:
         # Raise an HTTPException with status code 401 if the token is invalid
         raise HTTPException(status_code=401, detail="Invalid token",)
-    
+
+
 def get_token_from_request(request):
     try:
         return request.headers["authorization"]
-    except: 
+    except:
         raise jwt.InvalidTokenError
+
+
 def get_route(request):
     return request.url
 
+
 async def get_body(request):
-    return jsonable_encoder(await   request.body())
+    return jsonable_encoder(await request.body())
     # return await request.body()
 
 
 def create_access_token(data: dict):
     to_encode = data.copy()
+    print("to_encode", to_encode)
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     expires_delta = access_token_expires
     if expires_delta:
@@ -61,3 +60,20 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def decode_access_token(token: str):
+    try:
+        split_token = token.split(" ")
+        if (len(split_token) < 2):
+            raise jwt.InvalidTokenError
+        else:
+            token_type = split_token[0]
+            token = split_token[1]
+
+        if token_type.lower() == "bearer":
+            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        else:
+            raise jwt.InvalidTokenError
+    except:
+        raise jwt.InvalidTokenError

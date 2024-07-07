@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi import FastAPI
 from routes.user import router as UserRouter
 from routes.auth import auth_router as AuthRouter
-
 from middleware.middleware import Middleware
 
 app = FastAPI()
