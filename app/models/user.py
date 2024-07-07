@@ -6,6 +6,7 @@ class UserModel(BaseModel):
     last_name:  str = Field(...)
     email: EmailStr = Field(...)
     phone_number: str = Field(...)
+    password: str = Field(...)
 
 class UpdateUserModel(BaseModel):
     name: Optional[str]

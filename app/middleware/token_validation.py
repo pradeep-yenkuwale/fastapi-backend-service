@@ -50,9 +50,7 @@ async def get_body(request):
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    print("to_encode", to_encode)
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    expires_delta = access_token_expires
+    expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -60,7 +58,6 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
 
 def decode_access_token(token: str):
     try:

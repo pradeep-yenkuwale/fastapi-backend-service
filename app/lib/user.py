@@ -1,7 +1,7 @@
 from config.database import get_user_collection, user_helper
 from bson.objectid import ObjectId
-from helpers.response_helpers import ErrorResponseModel
 from fastapi import HTTPException
+from helpers.user_helpers import get_hashed_password, verify_password
 
 user_collection = get_user_collection()
 
@@ -17,6 +17,9 @@ async def retrieve_users():
 
 # Add a new user into to the database
 async def add_user(user_data: dict) -> dict:
+    user_password = user_data['password']
+    hashed_password = get_hashed_password(user_password)
+    user_data.update({"password": hashed_password})
     user = await user_collection.insert_one(user_data)
     new_user = await user_collection.find_one({"_id": user.inserted_id})
     return user_helper(new_user)
@@ -56,9 +59,9 @@ async def delete_user(id: str):
 
 
 # Retrieve a user with a matching email
-async def get_user_by_email(email: str) -> dict:
+async def get_user_by_email(email: str, send_password=None) -> dict:
     user = await user_collection.find_one({"email": email})
     if user:
-        return user_helper(user)
+        return user_helper(user, send_password)
     else:
         raise HTTPException(status_code=404, detail="User not found!")
