@@ -8,7 +8,7 @@ from middleware.middleware import Middleware
 app = FastAPI()
 app.include_router(UserRouter, tags=["User"], prefix="/api/v1")
 app.include_router(AuthRouter, tags=["User", "Auth"], prefix="/api/v1/user/auth")
-# app.add_middleware(Middleware)
+app.add_middleware(Middleware)
 
 @app.get("/", tags=["Root"])
 async def read_root():

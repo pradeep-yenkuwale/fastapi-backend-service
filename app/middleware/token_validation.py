@@ -15,20 +15,20 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # Function to verify the access token extracted from the request
 async def verify_access_token(request):
     # Extract the token from the request
-    token = get_token_from_request(request)
     try:
+        user_token = get_token_from_request(request)
         # Decode and verify the token using the secret key and algorithm
         url = get_route(request)
         if "auth/login" in str(url):
             request_payload = await get_body(request)
             request_payload = json.loads(request_payload)
             user_data = await get_user_by_email(request_payload['email'])
-            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-            token = create_access_token(request_payload, access_token_expires)
+            token = create_access_token(request_payload)
             user_data["access_token"] = token
-            return user_data
+            setattr(request, "body", user_data)
+            return request
         else:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jwt.decode(user_token, SECRET_KEY, algorithms=[ALGORITHM])
             return payload
     except jwt.ExpiredSignatureError:
         # Raise an HTTPException with status code 401 if the token has expired
@@ -38,9 +38,10 @@ async def verify_access_token(request):
         raise HTTPException(status_code=401, detail="Invalid token",)
     
 def get_token_from_request(request):
-    print("Request", request.url)
-    return request.headers["authorization"]
-
+    try:
+        return request.headers["authorization"]
+    except: 
+        raise jwt.InvalidTokenError
 def get_route(request):
     return request.url
 
@@ -49,8 +50,10 @@ async def get_body(request):
     # return await request.body()
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict):
     to_encode = data.copy()
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expires_delta = access_token_expires
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:

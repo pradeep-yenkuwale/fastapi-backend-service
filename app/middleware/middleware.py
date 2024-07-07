@@ -11,8 +11,7 @@ class Middleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
             # Call the verify_access_token function to validate the token
-            user_data = await verify_access_token(request)
-            print("user_data ce", user_data)
+            user_validation = await verify_access_token(request)
             # If token validation succeeds, continue to the next middleware or route handler
             response = await call_next(request)
             return response
